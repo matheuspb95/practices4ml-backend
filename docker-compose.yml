@@ -1,0 +1,46 @@
+version: "3"
+
+services:
+  practices4ml-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: practices4ml-api
+    user: root
+    ports:
+      - 7000:7777
+    networks: 
+    - production-network
+    environment:
+      PORT: 7777
+    restart: on-failure
+
+  mongo:
+    image: mongo
+    container_name: practices4ml-db
+    restart: always
+    networks: 
+    - production-network
+    logging:
+      driver: none
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    networks: 
+    - production-network
+    logging:
+      driver: none
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+
+networks: 
+  production-network:
+    driver: bridge
