@@ -9,11 +9,10 @@ app.include_router(router)
 
 @app.get("/")
 async def root():
-  return {"message": "Working"}
+  return {"message": "API Working"}
 
 
 @app.on_event("shutdown")
 def shutdown_event():
     client.close()
-
 

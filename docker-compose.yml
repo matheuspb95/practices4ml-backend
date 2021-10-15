@@ -8,11 +8,11 @@ services:
     container_name: practices4ml-api
     user: root
     ports:
-      - 7000:7777
+      - 7000:7000
     networks: 
     - production-network
     environment:
-      PORT: 7777
+      PORT: 7000
     restart: on-failure
 
   mongo:
