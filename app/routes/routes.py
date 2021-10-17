@@ -3,9 +3,9 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from app.db.connection import db
 from app.models.models import CreateUserModel, Token, UpdateUserModel
 from app.controllers.validations import check_obj
-from app.controllers.security import get_password_hash, authenticate_user
+from app.controllers.security import get_password_hash, authenticate_user, decode_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
 
 router = APIRouter(
     prefix="/users",
@@ -35,6 +35,13 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 @router.put("/")
 def update_user(user: UpdateUserModel, token: str = Depends(oauth2_scheme)):
-    # validar nome, email, work, degree, areas
-    db.users.update_one(user.dict())
-    # retornar OK/NOTOK
+    check_obj(user)
+    payload = decode_token(token)
+    if (not payload['sub'] == user.email):
+        raise HTTPException(
+            status_code=401, detail="User not authenticated")
+    result = db.users.update_one({"email": user.email}, { "$set": user.dict()})
+    if (not result.modified_count):
+        raise HTTPException(
+            status_code=400, detail="No user found or modified")
+    return "User {} saved".format(user.email)
