@@ -20,11 +20,12 @@ def create_user(user: CreateUserModel):
             status_code=409, detail="{email} already in use".format(email=user.email))
     db_user = user.dict()
     db_user['password'] = get_password_hash(db_user.pop('password'))
-    result = db.users.insert_one(db_user)
-    if result.writeConcernError or result.writeError:
+    try:
+        db.users.insert_one(db_user)
+        return "user {email} created".format(email=db_user["email"])
+    except:
         raise HTTPException(
             status_code=503, detail="Database error, try again later")
-    return "user {email} created".format(email=db_user["email"])
 
 
 @router.post("/login", response_model=Token)
