@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 from enum import Enum
 
 
@@ -42,10 +43,10 @@ class Token(BaseModel):
 class UpdateUserModel(BaseModel):
     email: str
     name: str
-    work: Work
+    work: List[Work]
     organization: str
     occupation: str
     degree: Degree
-    areas: Areas
+    areas: List[Areas]
     photo: str #BASE64
 

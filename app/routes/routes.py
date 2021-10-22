@@ -12,10 +12,11 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 @router.post("/")
 def create_user(user: CreateUserModel):
     check_obj(user)
-    if(db.users.find_one({"email":user.email})):
+    if(db.users.find_one({"email": user.email})):
         raise HTTPException(
             status_code=409, detail="{email} already in use".format(email=user.email))
     db_user = user.dict()
@@ -30,19 +31,29 @@ def create_user(user: CreateUserModel):
 
 @router.post("/login", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    access_token = authenticate_user(db, form_data.username, form_data.password)
+    access_token = authenticate_user(
+        db, form_data.username, form_data.password)
     return {"access_token": access_token, "token_type": "bearer"}
-    
+
 
 @router.put("/")
 def update_user(user: UpdateUserModel, token: str = Depends(oauth2_scheme)):
     check_obj(user)
     payload = decode_token(token)
-    if (not payload['sub'] == user.email):
+    if (not db.users.find_one({"email": payload["sub"]})):
         raise HTTPException(
             status_code=401, detail="User not authenticated")
-    result = db.users.update_one({"email": user.email}, { "$set": user.dict()})
+    result = db.users.update_one({"email": user.email}, {"$set": user.dict()})
     if (not result.modified_count):
         raise HTTPException(
             status_code=400, detail="No user found or modified")
     return "User {} saved".format(user.email)
+
+
+@router.get("/")
+def get_user(token: str = Depends(oauth2_scheme)):
+    payload = decode_token(token)
+    user = db.users.find_one({"email": payload["sub"]})
+    user.pop('_id')
+    user.pop('password')
+    return user
