@@ -1,44 +1,38 @@
 from pydantic import BaseModel
 from typing import List
-from enum import Enum
+from .enums import (Work, Degree, Areas, OrganizationType, DevelopmentProcess,
+                    DataSource, Challenges, Context, ContributionType, SWEBOK)
+from bson import ObjectId
+from typing import Optional
 
 
-class Work(str, Enum):
-    ACADEMIC = 'academic'
-    INDUSTRY = 'industry'
+class PyObjectId(ObjectId):
 
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
 
-class Degree(str, Enum):
-    STUDENT = 'student'
-    GRADUATE = 'graduate'
-    SPECIALIST = 'specialist'
-    MASTER = 'master'
-    PHD = 'phd'
-    OTHER = 'other'
+    @classmethod
+    def validate(cls, v):
+        if not ObjectId.is_valid(v):
+            raise ValueError('Invalid objectid')
+        return ObjectId(v)
 
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema.update(type='string')
 
-class Areas(str, Enum):
-    SOFTWARE_ENGINEERING = 'software engineering'
-    HUMAN_COMPUTER_INTERACTION = 'human computer interaction'
-    INTERACTION_DESIGN = 'interaction design'
-    ARTIFICIAL_INTELLIGENCE = 'artificial intelligence'
-    MACHINE_LEARNING = 'machine learning'
-    NEURAL_NETWORKS = 'neural networks'
-    DEEP_LEARNING = 'deep learning'
-    DATA_MINING = 'data mining'
-    DATA_SCIENCE = 'data science'
-    BIG_DATA = 'big data'
-    COMPUTER_VISION = 'computer vision'
-    SOFTWARE_ARCHITECTURE = 'software architecture'
 
 class CreateUserModel(BaseModel):
     email: str
     name: str
     password: str
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
+
 
 class UpdateUserModel(BaseModel):
     email: str
@@ -48,5 +42,31 @@ class UpdateUserModel(BaseModel):
     occupation: str
     degree: Degree
     areas: List[Areas]
-    photo: str #BASE64
+    photo: str  # BASE64
 
+
+class File(BaseModel):
+    filename: str
+    filedata: str
+
+
+class Author(BaseModel):
+    author_name: str
+    user_id: Optional[PyObjectId]
+
+
+class CreatePractices(BaseModel):
+    name: str
+    description: str
+    organization_type: OrganizationType
+    development_process: DevelopmentProcess
+    context: Context
+    data_source: DataSource
+    contribution_type: ContributionType
+    authors: List[Author]
+    challenges: List[Challenges]
+    swebok: List[SWEBOK]
+    files: List[File]
+    reference: str
+    link: str
+    doi: str
