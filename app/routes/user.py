@@ -4,6 +4,7 @@ from app.db.connection import db
 from app.models.models import CreateUserModel, Token, UpdateUserModel
 from app.controllers.validations import check_obj
 from app.controllers.security import get_password_hash, authenticate_user, decode_token
+import re
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
 
@@ -57,3 +58,16 @@ def get_user(token: str = Depends(oauth2_scheme)):
     user.pop('_id')
     user.pop('password')
     return user
+
+
+@router.get("/search")
+def search_user(search: str):
+    regex = re.compile("^{search}".format(search=search), flags=re.IGNORECASE)
+    find = db.users.find({"name": {"$regex": regex}}, {
+        "_id": 1, "name": 1})
+    res = []
+    for user in find:
+        user["user_id"] = str(user.pop("_id"))
+        user["author_name"] = user["name"]
+        res.append(user)
+    return res
