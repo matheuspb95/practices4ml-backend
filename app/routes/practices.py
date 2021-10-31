@@ -39,6 +39,11 @@ def list_practices(search: str = '', skip: int = 0, limit: int = 0):
         prat["id"] = str(prat.pop("_id"))
         for author in prat["authors"]:
             if author["user_id"]:
+                author_photo = db.users.find_one(
+                    {"_id": author["user_id"]}, ["photo"])
+                author_photo.pop("_id")
                 author["user_id"] = str(author["user_id"])
+                if "photo" in author_photo:
+                    author["photo"] = author_photo["photo"]
         practices.append(prat)
     return practices
