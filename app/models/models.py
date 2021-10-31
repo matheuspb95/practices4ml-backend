@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 from typing import List
 from .enums import (Work, Degree, Areas, OrganizationType, DevelopmentProcess,
@@ -56,6 +57,7 @@ class Author(BaseModel):
 
 
 class CreatePractices(BaseModel):
+    create_date: Optional[datetime]
     name: str
     description: str
     organization_type: OrganizationType
