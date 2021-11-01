@@ -56,8 +56,8 @@ class Author(BaseModel):
     user_id: Optional[PyObjectId]
 
 
-class CreatePractices(BaseModel):
-    create_date: Optional[datetime]
+class ListPractices(BaseModel):
+    create_date: datetime
     name: str
     description: str
     organization_type: OrganizationType
@@ -72,3 +72,37 @@ class CreatePractices(BaseModel):
     reference: str
     link: str
     doi: str
+
+
+class CreatePractices(BaseModel):
+    name: str
+    description: str
+    organization_type: OrganizationType
+    development_process: DevelopmentProcess
+    context: Context
+    data_source: DataSource
+    contribution_type: ContributionType
+    authors: List[Author]
+    challenges: List[Challenges]
+    swebok: List[SWEBOK]
+    files: List[File]
+    reference: str
+    link: str
+    doi: str
+
+
+class UpdatePractices(BaseModel):
+    name: Optional[str]
+    description: Optional[str]
+    organization_type: Optional[OrganizationType]
+    development_process: Optional[DevelopmentProcess]
+    context: Optional[Context]
+    data_source: Optional[DataSource]
+    contribution_type: Optional[ContributionType]
+    authors: Optional[List[Author]]
+    challenges: Optional[List[Challenges]]
+    swebok: Optional[List[SWEBOK]]
+    files: Optional[List[File]]
+    reference: Optional[str]
+    link: Optional[str]
+    doi: Optional[str]

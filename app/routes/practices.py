@@ -1,10 +1,10 @@
 from datetime import datetime
 from fastapi import Depends, APIRouter, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer
 from bson.objectid import ObjectId
 from app.db.connection import db
-from app.models.models import CreatePractices
-from app.controllers.validations import check_obj
+from app.models.models import CreatePractices, UpdatePractices
+from app.controllers.security import decode_token
 from typing import List
 import re
 
@@ -47,3 +47,34 @@ def list_practices(search: str = '', skip: int = 0, limit: int = 0):
                     author["photo"] = author_photo["photo"]
         practices.append(prat)
     return practices
+
+
+@router.put('/')
+def update_practices(practice_id: str,
+                     practice: UpdatePractices,
+                     token: str = Depends(oauth2_scheme)):
+    payload = decode_token(token)
+    practice_data = {
+        k: v
+        for k,
+        v in practice.dict().items() if v is not None
+    }
+    try:
+        user = db.users.find_one({"email": payload["sub"]})
+        db_practice = db.practices.find_one({"_id": ObjectId(practice_id)})
+        if not user or not db_practice:
+            raise HTTPException(
+                status_code=401, detail="Author or practice not found")
+        found = False
+        for author in db_practice["authors"]:
+            if author["user_id"] == user["_id"]:
+                found = True
+        if not found:
+            raise HTTPException(
+                status_code=401, detail="Author cannot modify practice")
+        result = db.practices.update_one(
+            {"_id": ObjectId(practice_id)}, {"$set": practice_data})
+        return "practice updated {id}".format(id=practice_id)
+    except:
+        raise HTTPException(
+            status_code=503, detail="Database error, try again later")
