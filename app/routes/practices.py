@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 @router.post("/")
-def create_practice(practice: CreatePractices):
+def create_practice(practice: CreatePractices, token: str = Depends(oauth2_scheme)):
     try:
         for author in practice.authors:
             if (author.user_id and not db.users.find_one({"_id": ObjectId(author.user_id)})):
@@ -32,21 +32,35 @@ def create_practice(practice: CreatePractices):
 
 
 @router.get("/")
-def list_practices(search: str = '', skip: int = 0, limit: int = 0):
+def list_practices(search: str = '',
+                   skip: int = 0,
+                   limit: int = 0,
+                   token: str = Depends(oauth2_scheme)):
+    payload = decode_token(token)
     practices = []
     regex = re.compile("^{search}".format(search=search), flags=re.IGNORECASE)
-    for prat in db.practices.find({"name": {"$regex": regex}}).skip(skip).limit(limit):
-        prat["id"] = str(prat.pop("_id"))
-        for author in prat["authors"]:
-            if author["user_id"]:
-                author_photo = db.users.find_one(
-                    {"_id": author["user_id"]}, ["photo"])
-                author_photo.pop("_id")
-                author["user_id"] = str(author["user_id"])
-                if "photo" in author_photo:
-                    author["photo"] = author_photo["photo"]
-        practices.append(prat)
-    return practices
+    try:
+        user = db.users.find_one({"email": payload["sub"]})
+        for prat in db.practices.find({"name": {"$regex": regex}}).skip(skip).limit(limit):
+            editable = False
+            prat["id"] = str(prat.pop("_id"))
+            for author in prat["authors"]:
+                if author["user_id"]:
+                    if author["user_id"] == user["_id"]:
+                        editable = True
+                    author_photo = db.users.find_one(
+                        {"_id": author["user_id"]}, ["photo"])
+                    author_photo.pop("_id")
+                    author["user_id"] = str(author["user_id"])
+                    if "photo" in author_photo:
+                        author["photo"] = author_photo["photo"]
+            prat["editable"] = editable
+            practices.append(prat)
+        return practices
+    except:
+        raise HTTPException(
+            status_code=503, detail="Database error, try again later")
+
 
 
 @router.put('/')
