@@ -32,10 +32,14 @@ def create_practice(practice: CreatePractices, token: str = Depends(oauth2_schem
 
 
 @router.get("/")
-def list_practices(search: str = '',
-                   skip: int = 0,
-                   limit: int = 0,
-                   token: str = Depends(oauth2_scheme)):
+def get_practices(
+        practice_id: str = None,
+        search: str = '',
+        skip: int = 0,
+        limit: int = 0,
+        token: str = Depends(oauth2_scheme)):
+    if practice_id:
+        return view_practice(practice_id)
     payload = decode_token(token)
     practices = []
     regex = re.compile("^{search}".format(search=search), flags=re.IGNORECASE)
@@ -61,6 +65,35 @@ def list_practices(search: str = '',
         raise HTTPException(
             status_code=503, detail="Database error, try again later")
 
+
+def view_practice(practice_id):
+    practice = db.practices.find_one({"_id": ObjectId(practice_id)})
+    practice.pop('_id')
+    practice["likes"] = 5
+    practice["views"] = 50
+    practice["comments"] = [
+        {
+            "author": {
+                "name": "MATHEUS PALHETA",
+                "photo": ""
+            },
+            "comment": "nice practice bro",
+            "likes": 1,
+            "date": datetime.now(),
+            "responses": [
+                {
+                    "author": {
+                        "name": "Eliza",
+                        "photo": ""
+                    },
+                    "comment": "I like it too",
+                    "likes": 1,
+                    "date": datetime.now(),
+                }
+            ]
+        }
+    ]
+    return practice
 
 
 @router.put('/')
