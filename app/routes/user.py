@@ -25,7 +25,8 @@ def create_user(user: CreateUserModel):
     try:
         db.users.insert_one(db_user)
         return "user {email} created".format(email=db_user["email"])
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=503, detail="Database error, try again later")
 

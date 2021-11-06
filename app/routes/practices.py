@@ -3,7 +3,7 @@ from fastapi import Depends, APIRouter, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from bson.objectid import ObjectId
 from app.db.connection import db
-from app.models.models import CreatePractices, UpdatePractices
+from app.models.models import CreatePractices, UpdatePractices, CreateComment
 from app.controllers.security import decode_token
 from typing import List
 import re
@@ -26,7 +26,8 @@ def create_practice(practice: CreatePractices, token: str = Depends(oauth2_schem
         practice.create_date = datetime.now()
         result = db.practices.insert_one(practice.dict())
         return "practice created {id}".format(id=result.inserted_id)
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=503, detail="Database error, try again later")
 
@@ -61,7 +62,8 @@ def get_practices(
             prat["editable"] = editable
             practices.append(prat)
         return practices
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=503, detail="Database error, try again later")
 
@@ -70,13 +72,13 @@ def view_practice(practice_id):
     practice = db.practices.find_one({"_id": ObjectId(practice_id)})
     practice.pop('_id')
     for author in practice["authors"]:
-              if author["user_id"]:
-                    author_photo = db.users.find_one(
-                        {"_id": author["user_id"]}, ["photo"])
-                    author_photo.pop("_id")
-                    author["user_id"] = str(author["user_id"])
-                    if "photo" in author_photo:
-                        author["photo"] = author_photo["photo"]
+        if author["user_id"]:
+            author_photo = db.users.find_one(
+                {"_id": author["user_id"]}, ["photo"])
+            author_photo.pop("_id")
+            author["user_id"] = str(author["user_id"])
+            if "photo" in author_photo:
+                author["photo"] = author_photo["photo"]
     practice["likes"] = 5
     practice["views"] = 50
     practice["comments"] = [
@@ -130,6 +132,36 @@ def update_practices(practice_id: str,
         result = db.practices.update_one(
             {"_id": ObjectId(practice_id)}, {"$set": practice_data})
         return "practice updated {id}".format(id=practice_id)
-    except:
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=503, detail="Database error, try again later")
+
+
+@router.post('/comment')
+def add_comment(practice_id: str, comment: CreateComment, token: str = Depends(oauth2_scheme)):
+    try:
+        payload = decode_token(token)
+        user = db.users.find_one({"email": payload["sub"]})
+        if not user:
+            raise HTTPException(
+                status_code=401, detail="User not found")
+        comm = {
+            "comment": comment.comment,
+            "author": {
+                "name": user["name"],
+                "photo": user["photo"],
+                "id": str(user["_id"])
+            },
+            "date": datetime.now()
+        }
+        db_practice = db.practices.find_one_and_update(
+            {"_id": ObjectId(practice_id)}, {"$push": {"comments": comm}})
+        if not db_practice:
+            raise HTTPException(
+                status_code=401, detail="Practice not found")
+        return "Comment added"
+    except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=503, detail="Database error, try again later")

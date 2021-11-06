@@ -75,6 +75,11 @@ class ListPractices(BaseModel):
     doi: str
 
 
+class CreateComment(BaseModel):
+    comment: str
+
+
+
 class CreatePractices(BaseModel):
     create_date: Optional[datetime]
     name: str
