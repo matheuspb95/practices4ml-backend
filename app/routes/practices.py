@@ -81,28 +81,6 @@ def view_practice(practice_id):
                 author["photo"] = author_photo["photo"]
     practice["likes"] = 5
     practice["views"] = 50
-    practice["comments"] = [
-        {
-            "author": {
-                "name": "MATHEUS PALHETA",
-                "photo": ""
-            },
-            "comment": "nice practice bro",
-            "likes": 1,
-            "date": datetime.now(),
-            "responses": [
-                {
-                    "author": {
-                        "name": "Eliza",
-                        "photo": ""
-                    },
-                    "comment": "I like it too",
-                    "likes": 1,
-                    "date": datetime.now(),
-                }
-            ]
-        }
-    ]
     return practice
 
 
