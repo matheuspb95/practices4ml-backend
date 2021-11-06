@@ -51,7 +51,7 @@ def get_practices(
             for author in prat["authors"]:
                 if author["user_id"]:
                     if author["user_id"] == user["_id"]:
-                        editable = True
+                        editable = "editor" in author and author["editor"]
                     author_photo = db.users.find_one(
                         {"_id": author["user_id"]}, ["photo"])
                     author_photo.pop("_id")
@@ -69,6 +69,14 @@ def get_practices(
 def view_practice(practice_id):
     practice = db.practices.find_one({"_id": ObjectId(practice_id)})
     practice.pop('_id')
+    for author in practice["authors"]:
+              if author["user_id"]:
+                    author_photo = db.users.find_one(
+                        {"_id": author["user_id"]}, ["photo"])
+                    author_photo.pop("_id")
+                    author["user_id"] = str(author["user_id"])
+                    if "photo" in author_photo:
+                        author["photo"] = author_photo["photo"]
     practice["likes"] = 5
     practice["views"] = 50
     practice["comments"] = [

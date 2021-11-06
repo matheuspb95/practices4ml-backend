@@ -54,6 +54,7 @@ class File(BaseModel):
 class Author(BaseModel):
     author_name: str
     user_id: Optional[PyObjectId]
+    editor: bool
 
 
 class ListPractices(BaseModel):
@@ -75,6 +76,7 @@ class ListPractices(BaseModel):
 
 
 class CreatePractices(BaseModel):
+    create_date: Optional[datetime]
     name: str
     description: str
     organization_type: OrganizationType
