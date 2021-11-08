@@ -117,7 +117,7 @@ def update_practices(practice_id: str,
 
 
 @router.post('/comment')
-def add_comment(practice_id: str, comment: CreateComment, token: str = Depends(oauth2_scheme)):
+def add_comment(practice_id: str, comment: CreateComment, comment_id: str = None, token: str = Depends(oauth2_scheme)):
     try:
         payload = decode_token(token)
         user = db.users.find_one({"email": payload["sub"]})
@@ -133,8 +133,13 @@ def add_comment(practice_id: str, comment: CreateComment, token: str = Depends(o
             },
             "date": datetime.now()
         }
-        db_practice = db.practices.find_one_and_update(
-            {"_id": ObjectId(practice_id)}, {"$push": {"comments": comm}})
+        if comment_id is None:
+            db_practice = db.practices.find_one_and_update(
+                {"_id": ObjectId(practice_id)}, {"$push": {"comments": comm}})
+        else:
+            db_practice = db.practices.find_one_and_update(
+                {"_id": ObjectId(practice_id)}, {"$push": {"comments.{id}.responses".format(id=comment_id): comm}})
+
         if not db_practice:
             raise HTTPException(
                 status_code=401, detail="Practice not found")
