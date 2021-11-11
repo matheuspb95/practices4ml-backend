@@ -69,7 +69,8 @@ def get_practices(
 
 
 def view_practice(practice_id):
-    practice = db.practices.find_one({"_id": ObjectId(practice_id)})
+    practice = db.practices.find_one_and_update(
+        {"_id": ObjectId(practice_id)}, {"$inc": {"views": 1}})
     practice.pop('_id')
     for author in practice["authors"]:
         if author["user_id"]:
@@ -79,9 +80,34 @@ def view_practice(practice_id):
             author["user_id"] = str(author["user_id"])
             if "photo" in author_photo:
                 author["photo"] = author_photo["photo"]
-    practice["likes"] = 5
-    practice["views"] = 50
     return practice
+
+
+@router.put('/like')
+def like_practice(practice_id: str, comment_id: int = None, response_id: int = None):
+    try:
+        if response_id is not None:
+            if comment_id is None:
+                raise HTTPException(
+                    status_code=404, detail="Comment not found")
+            db_response = "comments.{id}.responses.{res}.likes".format(
+                id=comment_id, res=response_id)
+            db.practices.find_one_and_update(
+                {"_id": ObjectId(practice_id)}, {"$inc": {db_response: 1}})
+            return "like on response"
+        if comment_id is not None:
+            db_comment = "comments.{id}.likes".format(id=comment_id)
+            db.practices.find_one_and_update(
+                {"_id": ObjectId(practice_id)}, {"$inc": {db_comment: 1}})
+            return "like on comment"
+
+        db.practices.find_one_and_update(
+            {"_id": ObjectId(practice_id)}, {"$inc": {"likes": 1}})
+        return "like on practice"
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=503, detail="Database error, try again later")
 
 
 @router.put('/')
