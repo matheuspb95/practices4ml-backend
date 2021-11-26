@@ -1,5 +1,6 @@
 from fastapi import Depends, APIRouter, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from bson.objectid import ObjectId
 from app.db.connection import db
 from app.models.models import CreateUserModel, Token, UpdateUserModel
 from app.controllers.validations import check_obj
@@ -15,7 +16,7 @@ router = APIRouter(
 
 
 @router.post("/")
-def create_user(user: CreateUserModel):
+def register(user: CreateUserModel):
     check_obj(user)
     if(db.users.find_one({"email": user.email})):
         raise HTTPException(
@@ -39,7 +40,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 
 @router.put("/")
-def update_user(user: UpdateUserModel, token: str = Depends(oauth2_scheme)):
+def update_profile(user: UpdateUserModel, token: str = Depends(oauth2_scheme)):
     check_obj(user)
     payload = decode_token(token)
     if (not db.users.find_one({"email": payload["sub"]})):
@@ -52,13 +53,32 @@ def update_user(user: UpdateUserModel, token: str = Depends(oauth2_scheme)):
     return "User {} saved".format(user.email)
 
 
-@router.get("/")
-def get_user(token: str = Depends(oauth2_scheme)):
+@router.get("/me")
+def get_user_info(token: str = Depends(oauth2_scheme)):
     payload = decode_token(token)
     user = db.users.find_one({"email": payload["sub"]})
     user.pop('_id')
     user.pop('password')
     return user
+
+
+@router.get("/")
+def get_users_list(token: str = Depends(oauth2_scheme), practice_id: str = None):
+    if practice_id:
+        practice = db.practices.find_one({"_id": ObjectId(practice_id)})
+        users = []
+        for author in practice["authors"]:
+            user = db.users.find_one({"_id": ObjectId(author["user_id"])})
+            user["id"] = str(user.pop("_id"))
+            users.append(user)
+        return users
+        
+    users = []
+    for user in db.users.find():
+        user["id"] = str(user.pop("_id"))
+        users.append(user)
+
+    return users
 
 
 @router.get("/search")
@@ -72,3 +92,25 @@ def search_user(search: str):
         user["author_name"] = user["name"]
         res.append(user)
     return res
+
+
+@router.put("/follow")
+def follow_user(user_id: str, token: str = Depends(oauth2_scheme)):
+    payload = decode_token(token)
+    try:
+        user = db.users.find_one({"email": payload["sub"]})
+        db.users.find_one_and_update(
+            {"_id": ObjectId(user_id)}, {"$push": {"followers": user["_id"]}})
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=503, detail="Database error, try again later")
+
+
+@router.get("/img")
+def get_profile_photo(user_id: str):
+    user = db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(
+            status_code=401, detail="User not found")
+    return user["photo"]

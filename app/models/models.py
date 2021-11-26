@@ -75,9 +75,18 @@ class ListPractices(BaseModel):
     doi: str
 
 
+class Like(BaseModel):
+    user_id: PyObjectId
+
+
 class CreateComment(BaseModel):
     comment: str
 
+
+class Comment(BaseModel):
+    comment: str
+    likes: List[Like]
+    user_id: PyObjectId
 
 
 class CreatePractices(BaseModel):
@@ -96,6 +105,10 @@ class CreatePractices(BaseModel):
     reference: str
     link: str
     doi: str
+
+
+class Practices(CreatePractices):
+    likes: List[Like]
 
 
 class UpdatePractices(BaseModel):
