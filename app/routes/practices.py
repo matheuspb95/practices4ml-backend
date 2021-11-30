@@ -97,7 +97,8 @@ def get_comments(practice_id: str, user_id: str):
                 "name": author["name"],
                 "photo": author["photo"]
             }
-            resp["liked"] = str(user_id) in resp["likes"]
+            if "likes" in resp:
+                resp["liked"] = str(user_id) in resp["likes"]
             comm["responses"].append(resp)
         author = db.users.find_one({"_id": comm["author"]})
         comm["author"] = {
@@ -106,7 +107,8 @@ def get_comments(practice_id: str, user_id: str):
         }
         comm.pop("practice_id")
         comm["id"] = str(comm.pop("_id"))
-        comm["liked"] = str(user_id) in comm["likes"]
+        if "likes" in comm:
+            comm["liked"] = str(user_id) in comm["likes"]
         comments.append(comm)
     return comments
 
@@ -127,7 +129,8 @@ def view_practice(practice_id, token: str = Depends(oauth2_scheme)):
                 if "photo" in author_photo:
                     author["photo"] = author_photo["photo"]
         practice["comments"] = get_comments(practice_id, user_id=user["_id"])
-        practice["liked"] = str(user["_id"]) in practice["likes"]
+        if "likes" in practice:
+            practice["liked"] = str(user["_id"]) in practice["likes"]
         return practice
     except Exception as e:
         print(e)

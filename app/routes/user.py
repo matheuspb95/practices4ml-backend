@@ -69,7 +69,12 @@ def get_users_list(token: str = Depends(oauth2_scheme), practice_id: str = None)
         users = []
         for author in practice["authors"]:
             user = db.users.find_one({"_id": ObjectId(author["user_id"])})
-            user["id"] = str(user.pop("_id"))
+            if user is None:
+                user = {
+                    "name": author["author_name"]
+                }
+            else:
+                user["id"] = str(user.pop("_id"))
             users.append(user)
         return users
         
