@@ -19,12 +19,29 @@ router = APIRouter(
 @router.post("/")
 def create_practice(practice: CreatePractices, token: str = Depends(oauth2_scheme)):
     try:
+        payload = decode_token(token)
+        user = db.users.find_one({"email": payload["sub"]})
         for author in practice.authors:
             if (author.user_id and not db.users.find_one({"_id": ObjectId(author.user_id)})):
                 raise HTTPException(
                     status_code=401, detail="Author id not existent")
         practice.create_date = datetime.now()
         result = db.practices.insert_one(practice.dict())
+
+        for author in practice.authors:
+            if author["user_id"]:
+                notification = {
+                    "user_id": author["user_id"],
+                    "type": "added_author",
+                    "text": "User {username} added you as author of practice {practice}!"\
+                    .format(username=user["name"], practice=practice.name),
+                    "practice_id": result.inserted_id,
+                    "insert_id": user["_id"],
+                    "read": False,
+                    "date": datetime.now()
+                }
+            db.notifications.insert_one(notification)
+
         return "practice created {id}".format(id=result.inserted_id)
     except Exception as e:
         print(e)
@@ -151,12 +168,26 @@ def like_practice(practice_id: str, token: str = Depends(oauth2_scheme)):
             return "deslike in practices"
         db.practices.find_one_and_update(
             {"_id": ObjectId(practice_id)}, {"$push": {"likes": str(user["_id"])}})
+        add_notification_like(pract, user)
         return "Like on practice"
     except Exception as e:
         print(e)
         raise HTTPException(
             status_code=503, detail="Database error, try again later")
 
+def add_notification_like(pract, user):
+    for author in pract["authors"]:
+        if author["user_id"]:
+            notification = {
+                "user_id": author["user_id"],
+                "type": "practice_like",
+                "text": "User {username} liked your practice!".format(username=user["name"]),
+                "practice_id": pract["_id"],
+                "liker_id": user["_id"],
+                "read": False,
+                "date": datetime.now()
+            }
+            db.notifications.insert_one(notification)
 
 @router.put('/')
 def update_practice(practice_id: str,
