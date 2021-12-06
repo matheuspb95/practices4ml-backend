@@ -77,13 +77,14 @@ def get_users_list(token: str = Depends(oauth2_scheme), practice_id: str = None)
                 user["id"] = str(user.pop("_id"))
             users.append(user)
         return users
-        
+
     users = []
     for user in db.users.find():
         user["id"] = str(user.pop("_id"))
         users.append(user)
 
     return users
+
 
 @router.get("/notifications")
 def get_user_notifications(token: str = Depends(oauth2_scheme)):
@@ -94,10 +95,10 @@ def get_user_notifications(token: str = Depends(oauth2_scheme)):
         for key in notif.keys():
             if type(notif[key]) is ObjectId:
                 notif[key] = str(notif[key])
-        print(notif)
         notifications.append(notif)
+    db.notifications.update_many({}, {"$set": {"read": True}})
+    notifications.reverse()
     return notifications
-        
 
 
 @router.get("/search")

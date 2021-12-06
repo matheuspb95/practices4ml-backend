@@ -29,11 +29,11 @@ def create_practice(practice: CreatePractices, token: str = Depends(oauth2_schem
         result = db.practices.insert_one(practice.dict())
 
         for author in practice.authors:
-            if author["user_id"]:
+            if author.user_id:
                 notification = {
-                    "user_id": author["user_id"],
+                    "user_id": author.user_id,
                     "type": "added_author",
-                    "text": "User {username} added you as author of practice {practice}!"\
+                    "text": "User {username} added you as author of practice {practice}!"
                     .format(username=user["name"], practice=practice.name),
                     "practice_id": result.inserted_id,
                     "insert_id": user["_id"],
@@ -95,6 +95,7 @@ def list_practices(author_id: str = None,
             prat["editable"] = editable
             if can_add:
                 practices.append(prat)
+        practices.reverse()
         return practices
     except Exception as e:
         print(e)
@@ -116,7 +117,7 @@ def get_comments(practice_id: str, user_id: str):
             }
             if "likes" in resp:
                 resp["liked"] = str(user_id) in resp["likes"]
-            comm["responses"].append(resp)
+            comm["responses"].insert(0, resp)
         author = db.users.find_one({"_id": comm["author"]})
         comm["author"] = {
             "name": author["name"],
@@ -127,6 +128,7 @@ def get_comments(practice_id: str, user_id: str):
         if "likes" in comm:
             comm["liked"] = str(user_id) in comm["likes"]
         comments.append(comm)
+        comments.reverse()
     return comments
 
 
@@ -175,6 +177,7 @@ def like_practice(practice_id: str, token: str = Depends(oauth2_scheme)):
         raise HTTPException(
             status_code=503, detail="Database error, try again later")
 
+
 def add_notification_like(pract, user):
     for author in pract["authors"]:
         if author["user_id"]:
@@ -188,6 +191,7 @@ def add_notification_like(pract, user):
                 "date": datetime.now()
             }
             db.notifications.insert_one(notification)
+
 
 @router.put('/')
 def update_practice(practice_id: str,

@@ -74,7 +74,7 @@ def add_notification_comm(pract, user):
         if author["user_id"]:
             notification = {
                 "user_id": author["user_id"],
-                "type": "practice_like",
+                "type": "comment",
                 "text": "User {username} commented your practice!".format(username=user["name"]),
                 "practice_id": pract["_id"],
                 "commenter_id": user["_id"],
