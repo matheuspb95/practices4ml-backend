@@ -73,6 +73,7 @@ class SWEBOK(str, Enum):
     models_methods = 'Models and Methods'
     software_quality = 'Software Quality'
     professional_practice = 'Professional Practice'
+    deployment = 'Deployment'
 
 
 class Work(str, Enum):

@@ -26,21 +26,24 @@ def create_practice(practice: CreatePractices, token: str = Depends(oauth2_schem
                 raise HTTPException(
                     status_code=401, detail="Author id not existent")
         practice.create_date = datetime.now()
-        result = db.practices.insert_one(practice.dict())
+        if db.practices.find_one({"name": practice.name}):
+            raise HTTPException(
+                status_code=401, detail="Practice {name} already exist".format(name=practice.name))
 
-        # for author in practice.authors:
-        #     if author.user_id:
-        #         notification = {
-        #             "user_id": author.user_id,
-        #             "type": "added_author",
-        #             "text": "User {username} added you as author of practice {practice}!"
-        #             .format(username=user["name"], practice=practice.name),
-        #             "practice_id": result.inserted_id,
-        #             "insert_id": user["_id"],
-        #             "read": False,
-        #             "date": datetime.now()
-        #         }
-        #     db.notifications.insert_one(notification)
+        result = db.practices.insert_one(practice.dict())
+        for author in practice.authors:
+            if author.user_id:
+                notification = {
+                    "user_id": author.user_id,
+                    "type": "added_author",
+                    "text": "User {username} added you as author of practice {practice}!"
+                    .format(username=user["name"], practice=practice.name),
+                    "practice_id": result.inserted_id,
+                    "creator_id": user["_id"],
+                    "read": False,
+                    "date": datetime.now()
+                }
+            db.notifications.insert_one(notification)
 
         return "practice created {id}".format(id=result.inserted_id)
     except Exception as e:
@@ -92,7 +95,7 @@ def list_practices(author_id: str = None,
                         can_add = True
                 else:
                     can_add = True
-            prat["editable"] = editable
+            prat["editable"] = editable or ("admin" in user and user["admin"])
             if can_add:
                 practices.append(prat)
         practices.reverse()
@@ -170,7 +173,7 @@ def like_practice(practice_id: str, token: str = Depends(oauth2_scheme)):
             return "deslike in practices"
         db.practices.find_one_and_update(
             {"_id": ObjectId(practice_id)}, {"$push": {"likes": str(user["_id"])}})
-        # add_notification_like(pract, user)
+        add_notification_like(pract, user)
         return "Like on practice"
     except Exception as e:
         print(e)
@@ -209,7 +212,7 @@ def update_practice(practice_id: str,
         if not user or not db_practice:
             raise HTTPException(
                 status_code=401, detail="Author or practice not found")
-        found = False
+        found = ("admin" in user and user["admin"])
         for author in db_practice["authors"]:
             if author["user_id"] == user["_id"]:
                 found = True

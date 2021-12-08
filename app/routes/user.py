@@ -32,6 +32,22 @@ def register(user: CreateUserModel):
             status_code=503, detail="Database error, try again later")
 
 
+@router.post("/admin")
+def set_admin(user_email: str, token: str = Depends(oauth2_scheme)):
+    payload = decode_token(token)
+    admin = db.users.find_one({"email": payload["sub"]})
+    if("admin" in admin and admin["admin"]):
+        result = db.users.update_one(
+            {"email": user_email}, {"$set": {"admin": True}})
+        if (not result.modified_count):
+            raise HTTPException(
+                status_code=400, detail="No user found or modified")
+        return "User {name} added as admin".format(name=user_email)
+    else:
+        raise HTTPException(
+            status_code=403, detail="User not authorized")
+
+
 @router.post("/login", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     access_token = authenticate_user(
@@ -86,6 +102,11 @@ def get_users_list(token: str = Depends(oauth2_scheme), practice_id: str = None)
     return users
 
 
+@router.get("/view-notification")
+def view_notification(notif_id: str, token: str = Depends(oauth2_scheme)):
+    db.notifications.update_one({"_id": ObjectId(notif_id)}, {"$set": {"read": True}})
+
+
 @router.get("/notifications")
 def get_user_notifications(token: str = Depends(oauth2_scheme)):
     payload = decode_token(token)
@@ -96,7 +117,6 @@ def get_user_notifications(token: str = Depends(oauth2_scheme)):
             if type(notif[key]) is ObjectId:
                 notif[key] = str(notif[key])
         notifications.append(notif)
-    db.notifications.update_many({}, {"$set": {"read": True}})
     notifications.reverse()
     return notifications
 
