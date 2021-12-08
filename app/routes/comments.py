@@ -60,7 +60,7 @@ def add_comment(comment: CreateComment, comment_id: str = None, practice_id: str
             raise HTTPException(
                 status_code=401, detail="Practice not found")
 
-        add_notification_comm(practice, user)
+        # add_notification_comm(practice, user)
 
         return "Comment added"
     except Exception as e:
@@ -98,16 +98,16 @@ def like_comment(comment_id: str, token: str = Depends(oauth2_scheme)):
             {"_id": ObjectId(comment_id)}, {"$push": {"likes": str(user["_id"])}})
         practice_id = comment["practice_id"] if "practice_id" in comment else\
              db.comments.find_one({"_id": comment["comment_id"]})["practice_id"]
-        notification = {
-            "user_id": comment["author"],
-            "type": "comment_like",
-            "text": "User {username} liked your comment!".format(username=user["name"]),
-            "practice_id": practice_id,
-            "liker_id": user["_id"],
-            "read": False,
-            "date": datetime.now()
-        }
-        db.notifications.insert_one(notification)
+        # notification = {
+        #     "user_id": comment["author"],
+        #     "type": "comment_like",
+        #     "text": "User {username} liked your comment!".format(username=user["name"]),
+        #     "practice_id": practice_id,
+        #     "liker_id": user["_id"],
+        #     "read": False,
+        #     "date": datetime.now()
+        # }
+        # db.notifications.insert_one(notification)
 
         return "Like on comment"
 

@@ -28,19 +28,19 @@ def create_practice(practice: CreatePractices, token: str = Depends(oauth2_schem
         practice.create_date = datetime.now()
         result = db.practices.insert_one(practice.dict())
 
-        for author in practice.authors:
-            if author.user_id:
-                notification = {
-                    "user_id": author.user_id,
-                    "type": "added_author",
-                    "text": "User {username} added you as author of practice {practice}!"
-                    .format(username=user["name"], practice=practice.name),
-                    "practice_id": result.inserted_id,
-                    "insert_id": user["_id"],
-                    "read": False,
-                    "date": datetime.now()
-                }
-            db.notifications.insert_one(notification)
+        # for author in practice.authors:
+        #     if author.user_id:
+        #         notification = {
+        #             "user_id": author.user_id,
+        #             "type": "added_author",
+        #             "text": "User {username} added you as author of practice {practice}!"
+        #             .format(username=user["name"], practice=practice.name),
+        #             "practice_id": result.inserted_id,
+        #             "insert_id": user["_id"],
+        #             "read": False,
+        #             "date": datetime.now()
+        #         }
+        #     db.notifications.insert_one(notification)
 
         return "practice created {id}".format(id=result.inserted_id)
     except Exception as e:
@@ -170,7 +170,7 @@ def like_practice(practice_id: str, token: str = Depends(oauth2_scheme)):
             return "deslike in practices"
         db.practices.find_one_and_update(
             {"_id": ObjectId(practice_id)}, {"$push": {"likes": str(user["_id"])}})
-        add_notification_like(pract, user)
+        # add_notification_like(pract, user)
         return "Like on practice"
     except Exception as e:
         print(e)
