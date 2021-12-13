@@ -31,9 +31,10 @@ def create_practice(practice: CreatePractices, token: str = Depends(oauth2_schem
                 status_code=401, detail="Practice {name} already exist".format(name=practice.name))
 
         result = db.practices.insert_one(practice.dict())
+        notifications = []
         for author in practice.authors:
-            if author.user_id:
-                notification = {
+            if author.user_id is not None:
+                notifications.append({
                     "user_id": author.user_id,
                     "type": "added_author",
                     "text": "User {username} added you as author of practice {practice}!"
@@ -42,8 +43,8 @@ def create_practice(practice: CreatePractices, token: str = Depends(oauth2_schem
                     "creator_id": user["_id"],
                     "read": False,
                     "date": datetime.now()
-                }
-            db.notifications.insert_one(notification)
+                })
+        db.notifications.insert(notifications)
 
         return "practice created {id}".format(id=result.inserted_id)
     except Exception as e:
