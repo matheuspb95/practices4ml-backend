@@ -44,7 +44,8 @@ def create_practice(practice: CreatePractices, token: str = Depends(oauth2_schem
                     "read": False,
                     "date": datetime.now()
                 })
-        db.notifications.insert(notifications)
+        if notifications:
+            db.notifications.insert(notifications)
 
         return "practice created {id}".format(id=result.inserted_id)
     except Exception as e:
